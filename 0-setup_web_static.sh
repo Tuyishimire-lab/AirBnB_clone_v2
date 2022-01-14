@@ -1,18 +1,32 @@
 #!/usr/bin/env bash
-# Sets up web servers
+# sets up my web servers for the deployment of web_static
 
-apt-get -y update
-apt-get -y install nginx
+#--updating the packages
+sudo apt-get -y update
+sudo apt-get -y install nginx
 
-service nginx start
+#--configure firewall
+sudo ufw allow 'Nginx HTTP'
 
-mkdir -p /data/web_static/releases/test
-mkdir -p /data/web_static/shared
-touch /data/web_static/releases/test/index.html
+#--created the dir
+sudo mkdir -p /data/web_static/releases/test /data/web_static/shared
 
-echo "Holberton School" | sudo tee /data/web_static/releases/test/index.html
+#--adds test string
+echo "<h1>Welcome to www.curanxious.tech</h1>" > /data/web_static/releases/test/index.html
 
-ln -sf /data/web_static/releases/test/ /data/web_static/current
-chown -R ubuntu:ubuntu /data/
-sed -i '/listen 80 default_server;/a location /hbnb_static { alias /data/web_static/current/;}' /etc/nginx/sites-available/default
-service nginx restart
+#--prevent overwrite
+if [ -d "/data/web_static/current" ];
+then
+    echo "path /data/web_static/current exists"
+    sudo rm -rf /data/web_static/current;
+fi;
+
+#--create symbolic link
+sudo ln -sf /data/web_static/releases/test/ /data/web_static/current
+sudo chown -hR ubuntu:ubuntu /data
+#sed -i "/server_name _;/a \\\n\tlocation /hbnb_static { \n\t\talias /data/web_static/current/;\n\t\tautoindex on;\n\t}" /etc/nginx/sites-available/default
+sudo sed -i '38i\\tlocation /hbnb_static/ {\n\t\talias /data/web_static/current/;\n\t}\n' /etc/nginx/sites-available/default
+sudo ln -sf '/etc/nginx/sites-available/default' '/etc/nginx/sites-enabled/default'
+
+#--restart NGINX
+sudo service nginx restart
